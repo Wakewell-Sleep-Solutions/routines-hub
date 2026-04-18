@@ -1,0 +1,52 @@
+# Daily detector: Discipline / HIPAA-hygiene (W12).
+# Runs daily at 17:30 UTC, matrix across all canonical repos. Git-greps for
+# banned patterns (console.*, `as any`, @ts-ignore, committed .env files)
+# and posts a rolling Linear issue per repo under Security Hygiene.
+# Signature: [discipline:<repo>]. Auto-closes via G1 when all violations clear.
+
+name: Detector — Discipline (daily)
+
+on:
+  schedule:
+    - cron: '30 17 * * *' # 17:30 UTC = 10:30 PDT
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        repo:
+          - sleep_test_scheduler
+          - WakewellWeb
+          - wakewell-hq
+          - 5dsmiles-dashboard
+          - treatment-hub
+          - aria-slack-bot
+          - claude-skills-ecosystem
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          repository: Wakewell-Sleep-Solutions/${{ matrix.repo }}
+          token: ${{ secrets.REPO_READ_TOKEN }}
+          path: target
+
+      - name: Checkout routines-hub
+        uses: actions/checkout@v4
+        with:
+          path: .routines-hub
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run discipline sweep
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          TARGET_REPO: ${{ matrix.repo }}
+          TARGET_DIR: ${{ github.workspace }}/target
+        working-directory: .routines-hub
+        run: node scripts/detectors/discipline.mjs

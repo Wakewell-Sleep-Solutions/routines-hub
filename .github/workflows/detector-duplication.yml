@@ -1,0 +1,63 @@
+# Daily detector: Code duplication via jscpd (W9).
+# Runs daily at 18:00 UTC, matrix across canonical repos. Parses jscpd JSON
+# and posts a rolling Linear issue per repo under Code Health. Signature:
+# [dupes:<repo>]. Auto-closes via G1 when duplication drops below threshold.
+
+name: Detector — Duplication (daily)
+
+on:
+  schedule:
+    - cron: '0 18 * * *' # 18:00 UTC = 11:00 PDT
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        repo:
+          - sleep_test_scheduler
+          - WakewellWeb
+          - wakewell-hq
+          - 5dsmiles-dashboard
+          - treatment-hub
+          - aria-slack-bot
+          - claude-skills-ecosystem
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          repository: Wakewell-Sleep-Solutions/${{ matrix.repo }}
+          token: ${{ secrets.REPO_READ_TOKEN }}
+          path: target
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run jscpd
+        working-directory: target
+        continue-on-error: true
+        run: |
+          npx --yes jscpd@latest \
+            --min-lines 10 \
+            --reporters json \
+            --output ../jscpd-out \
+            --silent \
+            --ignore 'node_modules/**,dist/**,build/**,.next/**,coverage/**,**/*.test.*,**/*.spec.*,graphify-out/**,.claude-flow/**' \
+            . || true
+
+      - name: Checkout routines-hub
+        uses: actions/checkout@v4
+        with:
+          path: .routines-hub
+
+      - name: Process findings
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          TARGET_REPO: ${{ matrix.repo }}
+          JSCPD_JSON: ${{ github.workspace }}/jscpd-out/jscpd-report.json
+        working-directory: .routines-hub
+        run: node scripts/detectors/duplication.mjs
