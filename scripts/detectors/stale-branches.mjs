@@ -32,6 +32,9 @@ async function gh(query, variables = {}) {
   return json.data;
 }
 
+// Note: GitHub's GraphQL `Commit.associatedPullRequests` does NOT accept a
+// `states` argument (unlike Repository.pullRequests). So we fetch up to 5
+// associated PRs with their `state` field and filter OPEN ones client-side.
 const data = await gh(
   `query Branches($owner: String!, $name: String!, $after: String) {
     repository(owner: $owner, name: $name) {
@@ -43,8 +46,8 @@ const data = await gh(
           target { ... on Commit {
             committedDate
             oid
-            associatedPullRequests(first: 1, states: [OPEN]) {
-              totalCount
+            associatedPullRequests(first: 5) {
+              nodes { state }
             }
           } }
         }
@@ -69,8 +72,9 @@ for (const ref of repo.refs.nodes) {
   if (ref.name === defaultBranch) continue;
   const ts = new Date(ref.target.committedDate).getTime();
   if (ts > threshold) continue;
-  // Skip branches with an open PR (they're not abandoned, just slow)
-  if (ref.target.associatedPullRequests?.totalCount > 0) continue;
+  // Skip branches with any OPEN PR (they're not abandoned, just slow)
+  const prs = ref.target.associatedPullRequests?.nodes || [];
+  if (prs.some((p) => p.state === 'OPEN')) continue;
   staleBranches.push({
     name: ref.name,
     committedDate: ref.target.committedDate,
