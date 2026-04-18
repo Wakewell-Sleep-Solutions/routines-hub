@@ -7,10 +7,10 @@ name: Detector — npm audit (daily)
 
 on:
   schedule:
-    # Weekly (was daily). 7 repos × 7 runs/week = 49 min/week baseline; now 7 runs/week = 7 min/week.
-    # CVE advisories typically land in batches; weekly is sufficient. Run manually via dispatch for
-    # urgent checks.
-    - cron: '0 14 * * 1' # Mondays 14:00 UTC = 07:00 PDT, before standup
+    # Daily. Matches the rest of the detector fleet so the groomer's heartbeat
+    # policy has a consistent cadence. Cost is ~7 matrix runs/day; worth it to
+    # catch High/Critical CVEs the same day they drop.
+    - cron: '0 14 * * *' # 14:00 UTC = 07:00 PDT, before standup
   workflow_dispatch:
 
 jobs:
