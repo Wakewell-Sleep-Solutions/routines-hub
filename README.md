@@ -44,6 +44,7 @@ Full ID config: [`config/linear.json`](config/linear.json).
 |---|---|---|---|---|
 | W2 | CI-red-on-main | `workflow_run: failure` on main | Prod Health | `[ci-red:<repo>]` |
 | W5 | npm audit | daily cron 14:00 UTC | Security Hygiene | `[cve:<id>:<repo>]` |
+| W11 | Linear Ground Truth Verifier | weekly Sun 22:00 UTC | Linear Ground Truth | `[verify-gap:<issue-id>:<slug>]` |
 
 ### Coming next (scaffolded but not yet enabled)
 
@@ -57,7 +58,6 @@ Full ID config: [`config/linear.json`](config/linear.json).
 | W8 | Code health weekly scan | Fri 18:00 UTC | Code Health |
 | W9 | Failed deploy | Azure Monitor alert | Prod Health |
 | W10 | Outdated majors monthly | 1st of month | Dependencies |
-| W11 | Linear Ground Truth Verifier | Sun 22:00 UTC | Linear Ground Truth |
 
 ---
 
