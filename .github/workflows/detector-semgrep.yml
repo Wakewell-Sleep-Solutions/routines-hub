@@ -1,0 +1,83 @@
+# Daily detector: Semgrep static analysis across all canonical repos (W6).
+# Runs daily at 15:00 UTC. For each repo, runs semgrep with the security-audit +
+# secrets + owasp-top-ten rulesets and posts a digested Linear issue under
+# Security Hygiene with signature [semgrep:<repo>]. The daily heartbeat means
+# the groomer (G1 CHECK 4) auto-closes when findings clear.
+
+name: Detector — Semgrep (daily)
+
+on:
+  schedule:
+    - cron: '0 15 * * *' # 15:00 UTC (08:00 PDT), after npm audit at 14:00
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        repo:
+          - sleep_test_scheduler
+          - WakewellWeb
+          - wakewell-hq
+          - 5dsmiles-dashboard
+          - treatment-hub
+          - aria-slack-bot
+          - claude-skills-ecosystem
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          repository: Wakewell-Sleep-Solutions/${{ matrix.repo }}
+          token: ${{ secrets.REPO_READ_TOKEN }}
+          path: target
+
+      - name: Checkout routines-hub
+        uses: actions/checkout@v4
+        with:
+          path: .routines-hub
+
+      - name: Set up Python (for semgrep install)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install semgrep
+        run: python -m pip install --quiet --upgrade semgrep
+
+      - name: Run semgrep
+        working-directory: target
+        continue-on-error: true
+        run: |
+          semgrep \
+            --config p/security-audit \
+            --config p/secrets \
+            --config p/owasp-top-ten \
+            --json \
+            --severity WARNING \
+            --severity ERROR \
+            --exclude node_modules \
+            --exclude dist \
+            --exclude build \
+            --exclude .next \
+            --exclude coverage \
+            --exclude graphify-out \
+            --exclude .claude-flow \
+            --output ../semgrep.json \
+            --timeout 300 \
+            --max-target-bytes 5000000 \
+            . || true
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Process findings
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          TARGET_REPO: ${{ matrix.repo }}
+          SEMGREP_JSON: ${{ github.workspace }}/semgrep.json
+        working-directory: .routines-hub
+        run: node scripts/detectors/semgrep.mjs
