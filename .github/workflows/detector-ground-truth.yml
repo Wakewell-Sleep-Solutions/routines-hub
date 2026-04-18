@@ -1,16 +1,16 @@
-# Weekly Linear Ground Truth Verifier (W11)
+# Daily Linear Ground Truth Verifier (W11)
 # Scans open "In Progress" Linear issues with acceptance-criteria checkboxes,
 # searches the canonical repos for evidence of implementation, posts a
 # verification comment per issue, and creates [verify-gap:...] sub-issues in
 # Ops / Linear Ground Truth for any AC without evidence.
 #
-# Runs Sundays 22:00 UTC (before the Monday morning triage).
+# Runs daily at 22:00 UTC (before US standup next day).
 
-name: Detector — Ground Truth Verifier (weekly)
+name: Detector — Ground Truth Verifier (daily)
 
 on:
   schedule:
-    - cron: '0 22 * * 0'
+    - cron: '0 22 * * *'
   workflow_dispatch:
     inputs:
       dry_run:

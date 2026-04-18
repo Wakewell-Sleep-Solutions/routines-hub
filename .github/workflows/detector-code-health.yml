@@ -1,16 +1,16 @@
-# Weekly detector: code-health signals (W8)
-# Scans each canonical repo for structural drift signals each Friday at 18:00 UTC:
+# Daily detector: code-health signals (W8)
+# Scans each canonical repo for structural drift signals every day at 16:00 UTC:
 #   - files over 300 LOC threshold
 #   - graphify god nodes (edges ≥200)
 #   - orphan files (0 in-edges)
-# Posts one Linear issue per repo per week summarizing drift vs baseline.
-# Signature: [code-health:<repo>:<YYYY-WW>]
+# Posts ONE rolling Linear issue per repo (signature [code-health:<repo>]).
+# Heartbeat comment on each match; G1 CHECK 4 auto-closes when signals clear.
 
-name: Detector — Code Health (weekly)
+name: Detector — Code Health (daily)
 
 on:
   schedule:
-    - cron: '0 18 * * 5' # Friday 18:00 UTC = 11:00 PDT
+    - cron: '0 16 * * *' # 16:00 UTC = 09:00 PDT
   workflow_dispatch:
 
 jobs:

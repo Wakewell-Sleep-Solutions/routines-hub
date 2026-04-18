@@ -1,16 +1,16 @@
-# Monthly detector: outdated major dependency versions (W10)
-# Runs on the 1st of every month at 16:00 UTC (09:00 PDT). Scans every canonical
-# repo's direct-dependency majors via `npm outdated --json`, groups by repo,
-# creates one Linear issue per repo listing everything ≥1 major behind.
+# Daily detector: outdated major dependency versions (W10)
+# Runs daily at 17:00 UTC. Scans every canonical repo's direct-dependency majors
+# via `npm outdated --json`, groups by repo, posts ONE rolling Linear issue per
+# repo listing everything ≥1 major behind.
 #
-# Signature: `[deps:majors:<repo>:<YYYY-MM>]` — one issue per repo per month.
-# Groomer G1 closes merged PRs; otherwise each month's issue auto-replaces.
+# Signature: `[deps:majors:<repo>]` — one rolling issue per repo.
+# Heartbeat comment on each match; G1 CHECK 4 auto-closes when all caught up.
 
-name: Detector — Outdated Majors (monthly)
+name: Detector — Outdated Majors (daily)
 
 on:
   schedule:
-    - cron: '0 16 1 * *' # 1st of month, 16:00 UTC
+    - cron: '0 17 * * *' # 17:00 UTC = 10:00 PDT
   workflow_dispatch:
 
 jobs:

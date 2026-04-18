@@ -4,11 +4,14 @@
 //   2. Comment on stale "In Progress" (>14d no update)
 //   3. Dedup by signature prefix — close duplicates, keep the oldest
 //   4. Close-on-signal-gone — close auto-generated issues whose underlying
-//      signal has aged past its detector cadence:
-//        [cve:*]         — close if no "Still present" heartbeat comment
-//                          for 3d (daily detector, 3 missed runs = confident)
-//        [code-health:*] — close if signature weekstamp is 14d+ old
-//        [deps:majors:*] — close if signature yearMonth is 45d+ old
+//      signal has aged past its detector cadence. All auto-detectors run
+//      daily, so the policy is uniform:
+//        [cve:*]         — 3d without a "Still present" heartbeat
+//        [code-health:*] — 3d without a heartbeat (W8 daily)
+//        [deps:majors:*] — 3d without a heartbeat (W10 daily)
+//        [semgrep:*]     — 3d without a heartbeat (W6 daily)
+//      Legacy datestamped signatures ([foo:repo:YYYY-MM] or YYYY-Www) close
+//      once the stamped period is 14d+ old — lets old issues retire cleanly.
 //
 // Env:
 //   LINEAR_API_KEY (required)
@@ -122,7 +125,14 @@ function parseDateStamp(sig) {
 }
 
 // Policy map for close-on-signal-gone. Returns null for signatures we don't groom.
+//
+// All auto-routines now run daily, so the default heartbeat threshold is 3d.
+// Datestamped legacy signatures (e.g. [code-health:repo:2026-W15]) retire
+// 14d after the stamped period via the datestamp fallback.
 function gonePolicy(sig) {
+  const hasDateStamp =
+    /:(\d{4})-W\d{1,2}\]/.test(sig) || /:(\d{4})-\d{2}\]/.test(sig);
+
   if (sig.startsWith('[cve:')) {
     return {
       kind: 'heartbeat',
@@ -131,17 +141,38 @@ function gonePolicy(sig) {
     };
   }
   if (sig.startsWith('[code-health:')) {
+    if (hasDateStamp) {
+      return {
+        kind: 'datestamp',
+        days: 14,
+        note: 'Legacy dated code-health snapshot retired',
+      };
+    }
     return {
-      kind: 'datestamp',
-      days: 14,
-      note: 'Weekly code-health snapshot aged out (next scan will file a fresh digest if still warranted)',
+      kind: 'heartbeat',
+      days: 3,
+      note: 'Code-health signals cleared in recent daily scans',
     };
   }
   if (sig.startsWith('[deps:majors:')) {
+    if (hasDateStamp) {
+      return {
+        kind: 'datestamp',
+        days: 14,
+        note: 'Legacy dated outdated-majors snapshot retired',
+      };
+    }
     return {
-      kind: 'datestamp',
-      days: 45,
-      note: 'Monthly outdated-majors snapshot aged out (next scan will file a fresh digest if still warranted)',
+      kind: 'heartbeat',
+      days: 3,
+      note: 'All major updates landed (no recent detection)',
+    };
+  }
+  if (sig.startsWith('[semgrep:')) {
+    return {
+      kind: 'heartbeat',
+      days: 3,
+      note: 'Semgrep findings cleared in recent daily scans',
     };
   }
   return null;
