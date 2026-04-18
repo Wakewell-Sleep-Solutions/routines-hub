@@ -53,8 +53,9 @@ jobs:
         if: steps.check.outputs.has_package == 'true'
         working-directory: target
         run: |
-          npm ci --ignore-scripts --no-audit --no-fund \
-          || npm install --ignore-scripts --no-audit --no-fund \
+          # Use --legacy-peer-deps from the start to tolerate peer conflicts
+          # (e.g. date-fns@4 vs react-day-picker@8 in WakewellWeb).
+          npm ci --ignore-scripts --no-audit --no-fund --legacy-peer-deps \
           || npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps
 
       - name: Run npm audit
