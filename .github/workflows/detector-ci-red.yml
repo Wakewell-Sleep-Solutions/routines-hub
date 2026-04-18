@@ -63,7 +63,7 @@ jobs:
 
       - name: Checkout routines-hub for resolver
         if: inputs.conclusion == 'success'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: Wakewell-Sleep-Solutions/routines-hub
           path: .routines-hub
