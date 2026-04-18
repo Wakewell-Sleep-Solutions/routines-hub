@@ -1,0 +1,81 @@
+# Monthly detector: outdated major dependency versions (W10)
+# Runs on the 1st of every month at 16:00 UTC (09:00 PDT). Scans every canonical
+# repo's direct-dependency majors via `npm outdated --json`, groups by repo,
+# creates one Linear issue per repo listing everything ≥1 major behind.
+#
+# Signature: `[deps:majors:<repo>:<YYYY-MM>]` — one issue per repo per month.
+# Groomer G1 closes merged PRs; otherwise each month's issue auto-replaces.
+
+name: Detector — Outdated Majors (monthly)
+
+on:
+  schedule:
+    - cron: '0 16 1 * *' # 1st of month, 16:00 UTC
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        repo:
+          - sleep_test_scheduler
+          - WakewellWeb
+          - wakewell-hq
+          - 5dsmiles-dashboard
+          - treatment-hub
+          - aria-slack-bot
+          - claude-skills-ecosystem
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          repository: Wakewell-Sleep-Solutions/${{ matrix.repo }}
+          token: ${{ secrets.REPO_READ_TOKEN }}
+          path: target
+
+      - name: Skip if no package.json
+        id: check
+        run: |
+          if [ -f target/package.json ]; then
+            echo "has_package=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_package=false" >> $GITHUB_OUTPUT
+            echo "::notice::${{ matrix.repo }} has no package.json — skipping"
+          fi
+
+      - name: Use Node 22
+        if: steps.check.outputs.has_package == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install deps
+        if: steps.check.outputs.has_package == 'true'
+        working-directory: target
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund \
+          || npm install --ignore-scripts --no-audit --no-fund \
+          || npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps
+
+      - name: Run npm outdated
+        if: steps.check.outputs.has_package == 'true'
+        working-directory: target
+        continue-on-error: true
+        run: npm outdated --json --long > ../outdated.json || true
+
+      - name: Checkout routines-hub
+        if: steps.check.outputs.has_package == 'true'
+        uses: actions/checkout@v4
+        with:
+          path: .routines-hub
+
+      - name: Process outdated majors
+        if: steps.check.outputs.has_package == 'true'
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          TARGET_REPO: ${{ matrix.repo }}
+          OUTDATED_JSON: ${{ github.workspace }}/outdated.json
+        working-directory: .routines-hub
+        run: node scripts/detectors/outdated-majors.mjs

@@ -44,6 +44,8 @@ Full ID config: [`config/linear.json`](config/linear.json).
 |---|---|---|---|---|
 | W2 | CI-red-on-main | `workflow_run: failure` on main | Prod Health | `[ci-red:<repo>]` |
 | W5 | npm audit | daily cron 14:00 UTC | Security Hygiene | `[cve:<id>:<repo>]` |
+| W8 | Code health weekly scan | Fri 18:00 UTC | Code Health | `[code-health:<repo>:<YYYY-WW>]` |
+| W10 | Outdated majors monthly | 1st of month 16:00 UTC | Dependencies | `[deps:majors:<repo>:<YYYY-MM>]` |
 | W11 | Linear Ground Truth Verifier | weekly Sun 22:00 UTC | Linear Ground Truth | `[verify-gap:<issue-id>:<slug>]` |
 
 ### Coming next (scaffolded but not yet enabled)
@@ -55,9 +57,7 @@ Full ID config: [`config/linear.json`](config/linear.json).
 | W4 | Azure App Insights exceptions | daily query | Prod Health |
 | W6 | Semgrep HIPAA/secrets | PR gate + weekly full scan | Security Hygiene |
 | W7 | Expiring secrets (60d/30d/14d) | weekly | Security Hygiene |
-| W8 | Code health weekly scan | Fri 18:00 UTC | Code Health |
 | W9 | Failed deploy | Azure Monitor alert | Prod Health |
-| W10 | Outdated majors monthly | 1st of month | Dependencies |
 
 ---
 

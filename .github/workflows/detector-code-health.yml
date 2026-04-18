@@ -1,0 +1,53 @@
+# Weekly detector: code-health signals (W8)
+# Scans each canonical repo for structural drift signals each Friday at 18:00 UTC:
+#   - files over 300 LOC threshold
+#   - graphify god nodes (edges ≥200)
+#   - orphan files (0 in-edges)
+# Posts one Linear issue per repo per week summarizing drift vs baseline.
+# Signature: [code-health:<repo>:<YYYY-WW>]
+
+name: Detector — Code Health (weekly)
+
+on:
+  schedule:
+    - cron: '0 18 * * 5' # Friday 18:00 UTC = 11:00 PDT
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        repo:
+          - sleep_test_scheduler
+          - WakewellWeb
+          - wakewell-hq
+          - 5dsmiles-dashboard
+          - treatment-hub
+          - aria-slack-bot
+          - claude-skills-ecosystem
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          repository: Wakewell-Sleep-Solutions/${{ matrix.repo }}
+          token: ${{ secrets.REPO_READ_TOKEN }}
+          path: target
+
+      - name: Checkout routines-hub
+        uses: actions/checkout@v4
+        with:
+          path: .routines-hub
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Scan code health
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          TARGET_REPO: ${{ matrix.repo }}
+          TARGET_DIR: ${{ github.workspace }}/target
+        working-directory: .routines-hub
+        run: node scripts/detectors/code-health.mjs
