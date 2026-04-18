@@ -1,0 +1,16 @@
+{
+  "name": "routines-hub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Linear-native routine automation for WakeWell / 5D Smiles. Detectors write signals to the Ops team; groomers keep it clean.",
+  "scripts": {
+    "detector:ci-red": "node scripts/detectors/ci-red.mjs",
+    "detector:npm-audit": "node scripts/detectors/npm-audit.mjs",
+    "groomer:linear-scrub": "node scripts/groomers/linear-scrub.mjs",
+    "test:linear": "node scripts/lib/linear.mjs --test"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

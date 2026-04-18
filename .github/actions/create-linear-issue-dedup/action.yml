@@ -1,0 +1,58 @@
+name: Create Linear Issue (Dedup)
+description: Searches Ops team for an open issue matching a signature, creates or comments.
+inputs:
+  signature:
+    description: 'Dedup prefix like [cve:CVE-2025-1234] or [ci-red:sleep_test_scheduler]'
+    required: true
+  title:
+    description: 'Full issue title (must start with signature)'
+    required: true
+  body:
+    description: 'Markdown body'
+    required: true
+  project:
+    description: 'Project key: security-hygiene | prod-health | linear-ground-truth | code-health | dependencies'
+    required: true
+  labels:
+    description: 'Comma-separated label names (e.g. routine,cve)'
+    required: false
+    default: 'routine'
+  priority:
+    description: '1=Urgent, 2=High, 3=Medium, 4=Low'
+    required: false
+    default: '3'
+  linear_api_key:
+    description: 'Linear API key'
+    required: true
+outputs:
+  action:
+    description: 'created | matched'
+    value: ${{ steps.run.outputs.action }}
+  identifier:
+    description: 'Linear issue identifier like OPS-42'
+    value: ${{ steps.run.outputs.identifier }}
+  url:
+    description: 'Linear issue URL'
+    value: ${{ steps.run.outputs.url }}
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout routines-hub
+      uses: actions/checkout@v4
+      with:
+        repository: Wakewell-Sleep-Solutions/routines-hub
+        path: .routines-hub
+        ref: main
+    - name: Ensure Linear issue
+      id: run
+      shell: bash
+      env:
+        LINEAR_API_KEY: ${{ inputs.linear_api_key }}
+        SIGNATURE: ${{ inputs.signature }}
+        TITLE: ${{ inputs.title }}
+        BODY: ${{ inputs.body }}
+        PROJECT: ${{ inputs.project }}
+        LABELS: ${{ inputs.labels }}
+        PRIORITY: ${{ inputs.priority }}
+      run: node .routines-hub/scripts/lib/ensure-issue.mjs

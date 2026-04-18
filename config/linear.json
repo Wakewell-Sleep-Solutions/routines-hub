@@ -1,0 +1,64 @@
+{
+  "workspace": "wakewellnow",
+  "team": {
+    "id": "d8a97fd6-781e-4178-b4c4-98a8e697ed79",
+    "key": "OPS",
+    "name": "Ops"
+  },
+  "projects": {
+    "security-hygiene": {
+      "id": "4c076596-3338-4094-a325-a4abe95127b8",
+      "name": "Security Hygiene",
+      "url": "https://linear.app/wakewellnow/project/security-hygiene-5228623634aa"
+    },
+    "prod-health": {
+      "id": "2c019878-a8bb-42bf-a8cd-5088275dcd68",
+      "name": "Prod Health",
+      "url": "https://linear.app/wakewellnow/project/prod-health-7a754d0c7283"
+    },
+    "linear-ground-truth": {
+      "id": "dd7bfb4d-5c33-4bf5-943b-9f15f2c410e6",
+      "name": "Linear Ground Truth",
+      "url": "https://linear.app/wakewellnow/project/linear-ground-truth-0cfd30e3d023"
+    },
+    "code-health": {
+      "id": "02b00026-1a68-4563-abf3-7394ce8426b6",
+      "name": "Code Health",
+      "url": "https://linear.app/wakewellnow/project/code-health-66a63364eb9f"
+    },
+    "dependencies": {
+      "id": "8586da5c-01c9-498c-af22-a724d27110ff",
+      "name": "Dependencies",
+      "url": "https://linear.app/wakewellnow/project/dependencies-70ce5d760714"
+    }
+  },
+  "labels": {
+    "routine": "84ebc141-b181-4700-8475-a75c9024ca4d",
+    "cve": "32c9d489-3aef-478b-9bf8-807bf87347c9",
+    "verify-gap": "c2cb65fd-1b0d-4eb7-8be9-b8a020a41939",
+    "bug-prod": "637f3d40-a18a-486c-bc3e-53019cf3ec40",
+    "ci-red": "f7c6fa07-5742-43c2-8a5f-c4790ded7e49",
+    "compliance": "6071d333-d8cc-4350-93fe-5027d1f902ef",
+    "auto-close": "b46e79fc-8abf-4bbf-9255-ce0ef9e8d035",
+    "evidence-gap": "35e25bb0-b88d-4b79-a34d-f3372dba8a65"
+  },
+  "states": {
+    "todo": "fdd36b0d-c6e2-48ea-8ccc-fbaad42827fa",
+    "backlog": "af4c4f2b-bb3c-467d-864d-fac9e75b7cfe",
+    "in-progress": "86e84e94-0fbf-4376-81f9-746edf8e6ee8",
+    "in-review": "49ab69e2-366a-4c90-bd3d-9d2acce00b11",
+    "done": "75a6cf8c-4467-40f5-87ae-11f34df8c2c9",
+    "duplicate": "5caaf992-f640-4ffe-a31c-07887b883074",
+    "canceled": "5b018abb-a9d3-4a0d-b8cc-30024236629f"
+  },
+  "priorities": {
+    "urgent": 1,
+    "high": 2,
+    "medium": 3,
+    "low": 4,
+    "none": 0
+  },
+  "users": {
+    "henry": "014505eb-d74d-4fe0-8ad3-749e69ab4083"
+  }
+}

@@ -1,0 +1,77 @@
+# Scheduled detector: npm audit across all canonical repos (W5)
+# Runs daily. For each High/Critical advisory, creates a Linear issue under
+# Security Hygiene with signature [cve:<id>:<repo>]. Auto-closes issues when
+# the advisory no longer appears.
+
+name: Detector — npm audit (daily)
+
+on:
+  schedule:
+    - cron: '0 14 * * *' # 14:00 UTC = 07:00 PDT, before standup
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        repo:
+          - sleep_test_scheduler
+          - WakewellWeb
+          - wakewell-patient-app
+          - wakewell-hq
+          - 5dsmiles-dashboard
+          - treatment-hub
+          - aria-slack-bot
+          - claude-skills-ecosystem
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          repository: Wakewell-Sleep-Solutions/${{ matrix.repo }}
+          token: ${{ secrets.REPO_READ_TOKEN }}
+          path: target
+
+      - name: Skip if no package.json
+        id: check
+        run: |
+          if [ -f target/package.json ]; then
+            echo "has_package=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_package=false" >> $GITHUB_OUTPUT
+            echo "::notice::${{ matrix.repo }} has no package.json — skipping"
+          fi
+
+      - name: Use Node 22
+        if: steps.check.outputs.has_package == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install deps (for accurate audit)
+        if: steps.check.outputs.has_package == 'true'
+        working-directory: target
+        run: npm ci --ignore-scripts --no-audit --no-fund || npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Run npm audit
+        if: steps.check.outputs.has_package == 'true'
+        id: audit
+        working-directory: target
+        continue-on-error: true
+        run: npm audit --json --audit-level=high > ../audit.json || true
+
+      - name: Checkout routines-hub
+        if: steps.check.outputs.has_package == 'true'
+        uses: actions/checkout@v4
+        with:
+          path: .routines-hub
+
+      - name: Process advisories
+        if: steps.check.outputs.has_package == 'true'
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          TARGET_REPO: ${{ matrix.repo }}
+          AUDIT_JSON: ${{ github.workspace }}/audit.json
+        working-directory: .routines-hub
+        run: node scripts/detectors/npm-audit.mjs

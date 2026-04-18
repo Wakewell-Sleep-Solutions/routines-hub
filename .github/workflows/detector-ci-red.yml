@@ -1,0 +1,79 @@
+# Reusable workflow: CI-red-on-main detector (W2)
+# Creates a Linear Ops issue when main branch CI fails. Auto-closes it when CI goes green.
+#
+# Called from each target repo's .github/workflows/routines-ci-red.yml (see examples/).
+
+name: Detector — CI Red on Main
+
+on:
+  workflow_call:
+    inputs:
+      repo:
+        description: 'Target repo name (used for dedup signature)'
+        type: string
+        required: true
+      workflow_name:
+        description: 'Name of the workflow that failed/succeeded'
+        type: string
+        required: true
+      run_url:
+        description: 'URL to the failed workflow run'
+        type: string
+        required: true
+      conclusion:
+        description: 'failure | success'
+        type: string
+        required: true
+      commit_sha:
+        description: 'Commit SHA that triggered the run'
+        type: string
+        required: true
+      commit_message:
+        description: 'Commit message (first line)'
+        type: string
+        required: false
+        default: ''
+    secrets:
+      LINEAR_API_KEY:
+        required: true
+
+jobs:
+  report-or-resolve:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update issue on failure
+        if: inputs.conclusion == 'failure'
+        uses: Wakewell-Sleep-Solutions/routines-hub/.github/actions/create-linear-issue-dedup@main
+        with:
+          signature: '[ci-red:${{ inputs.repo }}]'
+          title: '[ci-red:${{ inputs.repo }}] Main broken — ${{ inputs.workflow_name }}'
+          body: |
+            Main branch CI failed on **${{ inputs.repo }}**.
+
+            **Workflow:** ${{ inputs.workflow_name }}
+            **Commit:** `${{ inputs.commit_sha }}` — ${{ inputs.commit_message }}
+            **Run:** ${{ inputs.run_url }}
+
+            Auto-created by routines-hub CI-red detector.
+            Auto-closes when CI goes green on main.
+          project: prod-health
+          labels: routine,ci-red,bug-prod
+          priority: '2'
+          linear_api_key: ${{ secrets.LINEAR_API_KEY }}
+
+      - name: Checkout routines-hub for resolver
+        if: inputs.conclusion == 'success'
+        uses: actions/checkout@v4
+        with:
+          repository: Wakewell-Sleep-Solutions/routines-hub
+          path: .routines-hub
+          ref: main
+
+      - name: Auto-close when CI goes green
+        if: inputs.conclusion == 'success'
+        shell: bash
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          SIGNATURE: '[ci-red:${{ inputs.repo }}]'
+          RESOLVED_BY: ${{ inputs.run_url }}
+        run: node .routines-hub/scripts/lib/resolve-signature.mjs

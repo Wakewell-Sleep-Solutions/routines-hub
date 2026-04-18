@@ -1,0 +1,28 @@
+# Daily Linear Scrub groomer (G1)
+# Runs across ALL Linear teams (not just Ops) to keep hygiene:
+#   1. Auto-close issues whose linked GitHub PR has merged
+#   2. Comment on "In Progress" issues with no activity for 14+ days
+#   3. Dedup issues sharing the same signature prefix (keeps oldest, closes duplicates)
+#
+# Runs daily at 13:00 UTC (06:00 PDT) before the US workday starts.
+
+name: Groomer — Daily Linear Scrub
+
+on:
+  schedule:
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+
+jobs:
+  scrub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run scrub
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.REPO_READ_TOKEN }}
+        run: node scripts/groomers/linear-scrub.mjs

@@ -1,0 +1,27 @@
+# Drop this into each target repo at: .github/workflows/routines-ci-red.yml
+#
+# It watches the main-branch CI workflow (change `workflows: [CI]` to match yours)
+# and forwards success/failure to routines-hub's reusable detector.
+
+name: Routines — CI Red Reporter
+
+on:
+  workflow_run:
+    # UPDATE: list every workflow whose main-branch result you care about
+    workflows: ['CI', 'Build', 'Test']
+    types: [completed]
+    branches: [main]
+
+jobs:
+  report:
+    if: github.event.workflow_run.head_branch == 'main'
+    uses: Wakewell-Sleep-Solutions/routines-hub/.github/workflows/detector-ci-red.yml@main
+    with:
+      repo: ${{ github.repository }}
+      workflow_name: ${{ github.event.workflow_run.name }}
+      run_url: ${{ github.event.workflow_run.html_url }}
+      conclusion: ${{ github.event.workflow_run.conclusion }}
+      commit_sha: ${{ github.event.workflow_run.head_sha }}
+      commit_message: ${{ github.event.workflow_run.head_commit.message }}
+    secrets:
+      LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
