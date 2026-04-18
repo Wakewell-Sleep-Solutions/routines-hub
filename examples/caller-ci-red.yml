@@ -17,7 +17,7 @@ jobs:
     if: github.event.workflow_run.head_branch == 'main'
     uses: Wakewell-Sleep-Solutions/routines-hub/.github/workflows/detector-ci-red.yml@main
     with:
-      repo: ${{ github.repository }}
+      repo: ${{ github.event.repository.name }}
       workflow_name: ${{ github.event.workflow_run.name }}
       run_url: ${{ github.event.workflow_run.html_url }}
       conclusion: ${{ github.event.workflow_run.conclusion }}
