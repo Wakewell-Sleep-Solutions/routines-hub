@@ -3,6 +3,11 @@
 #   1. Auto-close issues whose linked GitHub PR has merged
 #   2. Comment on "In Progress" issues with no activity for 14+ days
 #   3. Dedup issues sharing the same signature prefix (keeps oldest, closes duplicates)
+#   4. Close-on-signal-gone for auto-generated Ops issues whose underlying
+#      signal has aged past the detector cadence:
+#        [cve:*]         — 3d with no "Still present" heartbeat from W5
+#        [code-health:*] — 14d since the snapshot's weekstamp
+#        [deps:majors:*] — 45d since the snapshot's yearMonth
 #
 # Runs daily at 13:00 UTC (06:00 PDT) before the US workday starts.
 
@@ -12,6 +17,11 @@ on:
   schedule:
     - cron: '0 13 * * *'
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Log actions without mutating Linear (true/false)'
+        required: false
+        default: 'false'
 
 jobs:
   scrub:
@@ -25,4 +35,5 @@ jobs:
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.REPO_READ_TOKEN }}
+          DRY_RUN: ${{ github.event.inputs.dry_run == 'true' && '1' || '0' }}
         run: node scripts/groomers/linear-scrub.mjs
