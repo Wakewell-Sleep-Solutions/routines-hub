@@ -1,0 +1,43 @@
+# Daily detector: Stale branches (W14).
+# Runs daily at 19:30 UTC. Uses GitHub GraphQL to list every branch per repo,
+# filters to non-default branches untouched for >30 days with no open PR.
+# No checkout needed — pure GraphQL query. Posts a rolling Linear issue per
+# repo under Code Health. Signature: [stale-branches:<repo>].
+# Auto-closes via G1 when count drops below threshold for 3 days.
+
+name: Detector — Stale Branches (daily)
+
+on:
+  schedule:
+    - cron: '30 19 * * *' # 19:30 UTC = 12:30 PDT
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        repo:
+          - sleep_test_scheduler
+          - WakewellWeb
+          - wakewell-hq
+          - 5dsmiles-dashboard
+          - treatment-hub
+          - aria-slack-bot
+          - claude-skills-ecosystem
+    steps:
+      - name: Checkout routines-hub
+        uses: actions/checkout@v4
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Scan stale branches
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.REPO_READ_TOKEN }}
+          TARGET_REPO: ${{ matrix.repo }}
+        run: node scripts/detectors/stale-branches.mjs

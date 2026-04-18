@@ -10,9 +10,12 @@
 //        [code-health:*] — W8 code health
 //        [deps:majors:*] — W10 outdated majors
 //        [semgrep:*]     — W6 semgrep
-//        [dead-code:*]   — W7 knip
-//        [dupes:*]       — W9 jscpd
-//        [discipline:*]  — W12 discipline
+//        [dead-code:*]       — W7 knip
+//        [dupes:*]           — W9 jscpd
+//        [discipline:*]      — W12 discipline
+//        [secrets-history:*] — W13 gitleaks
+//        [stale-branches:*]  — W14 stale branches
+//        [stale-prs:*]       — W15 stale PRs
 //      Legacy datestamped signatures ([foo:repo:YYYY-MM] or YYYY-Www) close
 //      once the stamped period is 14d+ old — lets old issues retire cleanly.
 //
@@ -197,6 +200,27 @@ function gonePolicy(sig) {
       kind: 'heartbeat',
       days: 3,
       note: 'Discipline violations cleared in recent daily scans',
+    };
+  }
+  if (sig.startsWith('[secrets-history:')) {
+    return {
+      kind: 'heartbeat',
+      days: 3,
+      note: 'Secrets-history findings cleared (or false-positive allowlisted)',
+    };
+  }
+  if (sig.startsWith('[stale-branches:')) {
+    return {
+      kind: 'heartbeat',
+      days: 3,
+      note: 'Stale-branch count dropped below threshold',
+    };
+  }
+  if (sig.startsWith('[stale-prs:')) {
+    return {
+      kind: 'heartbeat',
+      days: 3,
+      note: 'Stale-PR queue drained',
     };
   }
   return null;
