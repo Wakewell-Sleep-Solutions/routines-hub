@@ -411,6 +411,69 @@ async function run() {
     }
   }
 
+  // CHECK 5: Close [verify-gap:<parent>:...] issues whose parent is no longer
+  // in "started" state. W11 only creates these when the parent is In Progress
+  // or In Review, but parents can move to Backlog/Done between runs leaving
+  // stale verify-gap children. This check closes them so the Ops team sees
+  // only real, actionable verify-gaps (gaps that still need work on an
+  // actively-in-flight parent).
+  //
+  // Ref: OPS-87/88 (WAK-118 moved to Backlog after verify-gap children were
+  // created) — manually closed 2026-04-19. This check prevents recurrence.
+  summary.closed_parent_not_started = [];
+  const verifyGapRe = /^\[verify-gap:([A-Z]+-\d+):/;
+  for (const issue of opsIssues) {
+    if (alreadyClosedIds.has(issue.identifier)) continue;
+    if (summary.closed_signal_gone.find((x) => x.id === issue.identifier)) continue;
+
+    const m = issue.title.match(verifyGapRe);
+    if (!m) continue;
+    const parentIdentifier = m[1];
+
+    // Fetch parent state
+    let parentState;
+    try {
+      const data = await gql(
+        `query Parent($id: String!) {
+          issue(id: $id) { id identifier state { type name } }
+        }`,
+        { id: parentIdentifier },
+      );
+      parentState = data.issue?.state;
+    } catch (e) {
+      summary.errors.push({
+        id: issue.identifier,
+        error: `fetch parent ${parentIdentifier}: ${e.message}`,
+      });
+      continue;
+    }
+    if (!parentState) continue; // parent deleted — leave alone
+
+    // "started" = In Progress + In Review. Anything else means the verify-gap
+    // is no longer actionable (parent is pending, backlog, done, or canceled).
+    if (parentState.type === 'started') continue;
+
+    try {
+      if (!DRY_RUN) {
+        await commentOnIssue(
+          issue.id,
+          `Auto-closed by groomer — parent **${parentIdentifier}** is in **${parentState.name}** (not In Progress). Verify-gap issues are only actionable while the parent is in flight. When ${parentIdentifier} moves back to In Progress, W11 will re-create this gap if the code evidence is still missing.`,
+        );
+        await moveIssueToState(issue.id, 'done');
+      }
+      summary.closed_parent_not_started.push({
+        id: issue.identifier,
+        parent: parentIdentifier,
+        parent_state: parentState.name,
+      });
+      console.log(
+        `${DRY_RUN ? 'DRY-RUN ' : ''}PARENT-NOT-STARTED ${issue.identifier} (parent ${parentIdentifier} in ${parentState.name})`,
+      );
+    } catch (e) {
+      summary.errors.push({ id: issue.identifier, error: e.message });
+    }
+  }
+
   console.log('\n=== Summary ===');
   console.log(JSON.stringify(summary, null, 2));
 }
