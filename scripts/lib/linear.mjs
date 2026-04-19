@@ -38,6 +38,8 @@ async function gql(query, variables = {}) {
 
 // Search for an open issue whose title starts with the signature prefix.
 // Signature format: "[kind:identifier]" e.g. "[cve:CVE-2025-1234]" or "[ci-red:sleep_test_scheduler]"
+// `description` is included so detectors that embed prior-scan metrics in an
+// HTML comment (e.g. W23 complexity heartbeat delta) can parse them on match.
 export async function findOpenIssueBySignature(signature) {
   const query = `
     query SearchBySignature($filter: IssueFilter!) {
@@ -46,6 +48,7 @@ export async function findOpenIssueBySignature(signature) {
           id
           identifier
           title
+          description
           state { type name }
           url
         }
