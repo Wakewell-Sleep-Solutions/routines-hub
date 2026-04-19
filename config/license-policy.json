@@ -1,0 +1,57 @@
+{
+  "allowed": [
+    "MIT",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "0BSD",
+    "Unlicense",
+    "CC0-1.0",
+    "CC-BY-4.0",
+    "CC-BY-3.0",
+    "Python-2.0",
+    "Zlib",
+    "WTFPL",
+    "BSL-1.0",
+    "Artistic-2.0"
+  ],
+  "flagged": [
+    "GPL-2.0",
+    "GPL-2.0-or-later",
+    "GPL-2.0-only",
+    "GPL-3.0",
+    "GPL-3.0-or-later",
+    "GPL-3.0-only",
+    "LGPL-2.0",
+    "LGPL-2.1",
+    "LGPL-3.0",
+    "BUSL-1.1",
+    "Commons-Clause",
+    "EPL-1.0",
+    "EPL-2.0",
+    "MPL-2.0"
+  ],
+  "blocked": [
+    "UNLICENSED",
+    "UNKNOWN",
+    "SEE LICENSE IN",
+    "AGPL-1.0",
+    "AGPL-3.0",
+    "AGPL-3.0-or-later",
+    "AGPL-3.0-only",
+    "AGPL-*",
+    "SSPL-1.0",
+    "CC-BY-NC-*",
+    "CC-BY-NC-SA-*",
+    "CC-BY-NC-ND-*"
+  ],
+  "notes": {
+    "AGPL-*": "Network use = distribution. Using any AGPL lib in a SaaS forces open-sourcing our entire stack.",
+    "SSPL-1.0": "MongoDB's server-side license. Effectively AGPL for SaaS.",
+    "GPL-*": "Distribution triggers copyleft. OK for CLI tooling, never for web-server runtime deps.",
+    "LGPL-*": "Static linking triggers copyleft. OK if dynamically linked only.",
+    "UNKNOWN": "No license field or unresolvable expression — must investigate manually.",
+    "MPL-2.0": "File-level copyleft. Usually OK but flagged for review."
+  }
+}

@@ -1,0 +1,50 @@
+# Weekly detector: License Compliance (W26).
+# Runs Monday 22:30 UTC (staggered from W23 at 22:00). For each canonical repo
+# with deps, classifies every prod license against config/license-policy.json
+# and writes one rolling Linear issue per repo under Dependencies. Signature:
+# [license:<repo>]. Auto-closes via G1 when clear for 3d.
+
+name: Detector — License Compliance (weekly)
+
+on:
+  schedule:
+    - cron: '30 22 * * 1' # Monday 22:30 UTC, staggered from W23 (22:00 UTC)
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        repo:
+          - sleep_test_scheduler
+          - WakewellWeb
+          - wakewell-hq
+          - 5dsmiles-dashboard
+          - treatment-hub
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          repository: Wakewell-Sleep-Solutions/${{ matrix.repo }}
+          token: ${{ secrets.REPO_READ_TOKEN }}
+          path: target
+
+      - name: Checkout routines-hub
+        uses: actions/checkout@v4
+        with:
+          path: .routines-hub
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run license compliance scan
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          TARGET_REPO: ${{ matrix.repo }}
+          TARGET_DIR: ${{ github.workspace }}/target
+        working-directory: .routines-hub
+        run: node scripts/detectors/license-compliance.mjs
