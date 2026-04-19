@@ -224,6 +224,27 @@ function gonePolicy(sig) {
       note: 'Stale-PR queue drained',
     };
   }
+  if (sig.startsWith('[deploy-drift:')) {
+    return {
+      kind: 'heartbeat',
+      days: 3,
+      note: 'Deploy SHA drift cleared in recent scans',
+    };
+  }
+  if (sig === '[agent-zombies]' || sig.startsWith('[agent-zombies]')) {
+    return {
+      kind: 'heartbeat',
+      days: 3,
+      note: 'Agent-zombie queue drained',
+    };
+  }
+  if (sig.startsWith('[icloud-dupes:')) {
+    return {
+      kind: 'heartbeat',
+      days: 3,
+      note: 'iCloud-dupe files purged from git',
+    };
+  }
   return null;
 }
 

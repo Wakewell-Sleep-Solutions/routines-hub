@@ -1,0 +1,22 @@
+{
+  "WakewellWeb": {
+    "url": "https://wakewell-web.azurewebsites.net/healthz",
+    "shaJsonPath": "$.sha"
+  },
+  "sleep_test_scheduler": {
+    "url": "https://wakewell-scheduler.azurewebsites.net/healthz",
+    "shaJsonPath": "$.commit"
+  },
+  "wakewell-hq": {
+    "url": "https://wakewell-hq.azurewebsites.net/healthz",
+    "shaJsonPath": "$.sha"
+  },
+  "treatment-hub": {
+    "url": "https://treatment-hub.azurewebsites.net/healthz",
+    "shaJsonPath": "$.commit"
+  },
+  "5dsmiles-dashboard": {
+    "url": "https://5dsmiles-dashboard.azurewebsites.net/healthz",
+    "shaJsonPath": "$.sha"
+  }
+}

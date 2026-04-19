@@ -157,6 +157,69 @@ export async function findIssuesWithMergedPRs() {
   return data.issues.nodes;
 }
 
+// Find "started" issues labeled `claude-task` whose startedAt is older than
+// maxAgeHours and that have NO attachment linking to a GitHub PR. Used by W21
+// agent-zombie detector to surface background agents that claimed a Linear
+// issue, went In Progress, and dropped off without pushing a PR.
+//
+// Returns { labelExists: boolean, zombies: Issue[] }.
+//   - labelExists=false if the workspace has no `claude-task` label at all;
+//     caller should log + exit 0 (nothing to scan).
+//   - zombies excludes any issue with at least one attachment whose url
+//     matches `/pull/` (treated as a live PR link = not a zombie).
+export async function listClaudeTaskZombies({ maxAgeHours = 4 } = {}) {
+  // 1. Confirm the label exists in the workspace. eqIgnoreCase handles
+  //    "claude-task" / "Claude-Task" / "CLAUDE-TASK" variations gracefully.
+  const labelCheck = await gql(
+    `query ClaudeTaskLabel {
+      issueLabels(filter: { name: { eqIgnoreCase: "claude-task" } }, first: 1) {
+        nodes { id name }
+      }
+    }`,
+  );
+  const labelExists = (labelCheck.issueLabels?.nodes || []).length > 0;
+  if (!labelExists) return { labelExists: false, zombies: [] };
+
+  // 2. Fetch "started" issues with that label older than the threshold.
+  const cutoffISO = new Date(Date.now() - maxAgeHours * 3600 * 1000).toISOString();
+  const data = await gql(
+    `query ClaudeTaskStarted($cutoff: DateTimeOrDuration!) {
+      issues(
+        filter: {
+          state: { type: { in: ["started"] } }
+          labels: { name: { eqIgnoreCase: "claude-task" } }
+          startedAt: { lt: $cutoff }
+        }
+        first: 100
+        orderBy: updatedAt
+      ) {
+        nodes {
+          id
+          identifier
+          title
+          url
+          startedAt
+          updatedAt
+          assignee { name displayName }
+          team { key }
+          attachments { nodes { url title } }
+        }
+      }
+    }`,
+    { cutoff: cutoffISO },
+  );
+
+  const nodes = data.issues?.nodes || [];
+  const zombies = nodes.filter((issue) => {
+    const atts = issue.attachments?.nodes || [];
+    // If ANY attachment looks like a GitHub PR link, it's not a zombie.
+    const hasPr = atts.some((a) => typeof a.url === 'string' && a.url.includes('/pull/'));
+    return !hasPr;
+  });
+
+  return { labelExists: true, zombies };
+}
+
 // Update issue state.
 export async function moveIssueToState(issueId, stateKey) {
   const stateId = CONFIG.states[stateKey];
