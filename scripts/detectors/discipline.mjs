@@ -8,8 +8,18 @@
 //
 // Signature: [discipline:<repo>]  — one rolling issue per repo.
 // Heartbeat on match; G1 CHECK 4 auto-closes when all violations clear for 3d.
+//
+// Allowlist (per-repo opt-out for intentional violations):
+//   1. File-level: `.disciplinerc.json` at repo root with shape:
+//        { "console": ["scripts/**", "bin/**"],
+//          "asAny": ["legacy/**"],
+//          "tsIgnore": [] }
+//      Path patterns are gitignore-style; matching files are skipped entirely.
+//   2. Line-level: inline `// discipline(<kind>): <reason>` on the SAME line.
+//      Kinds: `console`, `as-any`, `ts-ignore`. Required reason after the colon.
+//      Example: `console.log("boot");  // discipline(console): CLI startup banner`
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { ensureIssue, commentOnIssue } from '../lib/linear.mjs';
 
@@ -20,9 +30,37 @@ if (!TARGET_DIR || !existsSync(TARGET_DIR)) {
   process.exit(0);
 }
 
+// Read .disciplinerc.json allowlist if present. Returns { console, asAny, tsIgnore }
+// where each value is an array of gitignore-style pathspecs to exclude.
+function readAllowlist() {
+  const empty = { console: [], asAny: [], tsIgnore: [] };
+  const path = `${TARGET_DIR}/.disciplinerc.json`;
+  if (!existsSync(path)) return empty;
+  try {
+    const cfg = JSON.parse(readFileSync(path, 'utf8'));
+    return {
+      console: Array.isArray(cfg.console) ? cfg.console : [],
+      asAny: Array.isArray(cfg.asAny) ? cfg.asAny : [],
+      tsIgnore: Array.isArray(cfg.tsIgnore) ? cfg.tsIgnore : [],
+    };
+  } catch (e) {
+    console.error(`  WARN: failed to parse .disciplinerc.json — ${e.message}`);
+    return empty;
+  }
+}
+
+const ALLOW = readAllowlist();
+const INLINE_ANNOTATION = /\/\/\s*discipline\((console|as-any|ts-ignore)\)\s*:/;
+
+// Convert allowlist paths to git pathspec exclusions.
+function toExcludes(paths) {
+  return paths.map((p) => `':!${p}'`);
+}
+
 // Use git grep — respects .gitignore, fast, no path glob surprises.
 // Returns { count, examples } where examples are up to 5 "file:line:text" strings.
-function gitGrep(pattern, extraPathSpecs = []) {
+// Pass `kind` to also drop lines bearing matching `// discipline(kind):` annotation.
+function gitGrep(pattern, extraPathSpecs = [], kind = null) {
   const pathspecs = [
     "'*.ts'",
     "'*.tsx'",
@@ -51,7 +89,14 @@ function gitGrep(pattern, extraPathSpecs = []) {
       `git -C ${JSON.stringify(TARGET_DIR)} grep -I -nE ${JSON.stringify(pattern)} -- ${pathspecs}`,
       { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 8 * 1024 * 1024 },
     );
-    const lines = out.split('\n').filter(Boolean);
+    let lines = out.split('\n').filter(Boolean);
+    if (kind) {
+      const annotationKind = kind === 'asAny' ? 'as-any' : kind === 'tsIgnore' ? 'ts-ignore' : 'console';
+      lines = lines.filter((l) => {
+        const m = l.match(INLINE_ANNOTATION);
+        return !(m && m[1] === annotationKind);
+      });
+    }
     return { count: lines.length, examples: lines.slice(0, 5) };
   } catch {
     // git grep exits 1 when nothing found — treat as empty
@@ -76,9 +121,13 @@ function trackedEnvFiles() {
 }
 
 const checks = {
-  console: gitGrep('(^|[^a-zA-Z_.])console\\.(log|error|warn|info|debug)\\s*\\('),
-  asAny: gitGrep('\\bas\\s+any\\b'),
-  tsIgnore: gitGrep('@ts-(ignore|nocheck)\\b'),
+  console: gitGrep(
+    '(^|[^a-zA-Z_.])console\\.(log|error|warn|info|debug)\\s*\\(',
+    toExcludes(ALLOW.console),
+    'console',
+  ),
+  asAny: gitGrep('\\bas\\s+any\\b', toExcludes(ALLOW.asAny), 'asAny'),
+  tsIgnore: gitGrep('@ts-(ignore|nocheck)\\b', toExcludes(ALLOW.tsIgnore), 'tsIgnore'),
 };
 const envFiles = trackedEnvFiles();
 

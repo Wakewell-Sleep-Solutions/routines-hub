@@ -134,7 +134,8 @@ function parseDateStamp(sig) {
 //
 // All auto-routines now run daily, so the default heartbeat threshold is 3d.
 // Datestamped legacy signatures (e.g. [code-health:repo:2026-W15]) retire
-// 14d after the stamped period via the datestamp fallback.
+// 7d after the stamped period via the datestamp fallback. Tightened from
+// 14d → 7d on 2026-04-19 to clean up OPS-26..37 legacy clones faster.
 function gonePolicy(sig) {
   const hasDateStamp =
     /:(\d{4})-W\d{1,2}\]/.test(sig) || /:(\d{4})-\d{2}\]/.test(sig);
@@ -150,7 +151,7 @@ function gonePolicy(sig) {
     if (hasDateStamp) {
       return {
         kind: 'datestamp',
-        days: 14,
+        days: 7,
         note: 'Legacy dated code-health snapshot retired',
       };
     }
@@ -164,7 +165,7 @@ function gonePolicy(sig) {
     if (hasDateStamp) {
       return {
         kind: 'datestamp',
-        days: 14,
+        days: 7,
         note: 'Legacy dated outdated-majors snapshot retired',
       };
     }

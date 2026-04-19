@@ -1,0 +1,76 @@
+# Routines-hub gitleaks config — extends gitleaks default rules and adds
+# patterns we have seen slip through during detector triage.
+#
+# Used by .github/workflows/detector-secrets-history.yml via:
+#   gitleaks detect --config <path-to-this-file>
+#
+# IMPORTANT: gitleaks --config REPLACES the default rules, so we use
+# [extend] to inherit them instead of redefining everything.
+
+title = "wakewell-routines-hub"
+
+[extend]
+useDefault = true
+
+# --------- custom rules ---------
+
+# Postgres connection URL leak. Default gitleaks generic-api-key rule
+# does NOT catch postgres://USER:PASSWORD@HOST/DB style URLs reliably.
+# Surfaced 2026-04-18 in 5dsmiles when the wakewelladmin password sat
+# in a committed connection string and W13 missed it.
+[[rules]]
+id = "postgres-url-credentials"
+description = "Postgres connection URL with embedded credentials"
+regex = '''(?i)(postgres(?:ql)?://)([^:\s]+):([^@\s]+)@'''
+secretGroup = 3
+keywords = ["postgres://", "postgresql://"]
+tags = ["database", "credential", "wakewell"]
+
+# Mongo connection URL credentials — same shape, same risk.
+[[rules]]
+id = "mongo-url-credentials"
+description = "Mongo connection URL with embedded credentials"
+regex = '''(?i)(mongodb(?:\+srv)?://)([^:\s]+):([^@\s]+)@'''
+secretGroup = 3
+keywords = ["mongodb://", "mongodb+srv://"]
+tags = ["database", "credential", "wakewell"]
+
+# MySQL / MariaDB connection URL credentials.
+[[rules]]
+id = "mysql-url-credentials"
+description = "MySQL connection URL with embedded credentials"
+regex = '''(?i)(mysql://)([^:\s]+):([^@\s]+)@'''
+secretGroup = 3
+keywords = ["mysql://"]
+tags = ["database", "credential", "wakewell"]
+
+# Redis connection URL with auth (rediss:// + AUTH password)
+[[rules]]
+id = "redis-url-credentials"
+description = "Redis connection URL with embedded password"
+regex = '''(?i)(rediss?://)([^:\s]+):([^@\s]+)@'''
+secretGroup = 3
+keywords = ["redis://", "rediss://"]
+tags = ["cache", "credential", "wakewell"]
+
+# --------- allowlist ---------
+# Default scan-wide allowlist. Per-repo allowlists belong in the target's
+# own .gitleaks.toml. Here we only allowlist patterns that are safe by
+# construction across every wakewell repo.
+
+[allowlist]
+description = "Global routines-hub allowlist"
+paths = [
+  '''node_modules/''',
+  '''graphify-out/''',
+  '''.next/''',
+  '''dist/''',
+  '''build/''',
+  '''coverage/''',
+  '''\.claude-flow/''',
+]
+# Common test fixture / placeholder values that look like real creds
+regexes = [
+  '''(?i)(postgres|mysql|mongodb|rediss?)://(test|dummy|fake|user|admin):(test|dummy|fake|password|pass|secret)@''',
+  '''(?i)(postgres|mysql|mongodb|rediss?)://[^:]+:(\$\{[^}]+\}|<[^>]+>|xxx+|REDACTED|REPLACE_ME)@''',
+]
