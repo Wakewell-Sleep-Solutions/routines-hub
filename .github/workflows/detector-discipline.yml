@@ -27,19 +27,19 @@ jobs:
           - claude-skills-ecosystem
     steps:
       - name: Checkout target repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: Wakewell-Sleep-Solutions/${{ matrix.repo }}
           token: ${{ secrets.REPO_READ_TOKEN }}
           path: target
 
       - name: Checkout routines-hub
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: .routines-hub
 
       - name: Use Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
 
