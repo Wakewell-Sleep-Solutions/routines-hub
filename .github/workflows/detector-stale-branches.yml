@@ -28,10 +28,10 @@ jobs:
           - claude-skills-ecosystem
     steps:
       - name: Checkout routines-hub
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Use Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
 
